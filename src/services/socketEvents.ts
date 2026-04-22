@@ -1,30 +1,33 @@
-import { db } from "../db";
+import AuthWorker from "./handleAuthWorker?worker";
+
+let authWorker: Worker | null = null;
 
 export const socketEventHandler = (event: string, payload: any) => {
-    if (event === "user:authenticated") {
-        handleAuthenticated(payload)
-    }
-}
-
+  if (event === "user:authenticated") {
+    handleAuthenticated(payload);
+  }
+};
 
 const handleAuthenticated = (payload: any) => {
-    console.log("handleAuthenticated");
+  authWorker = new AuthWorker();
 
+  authWorker.onmessage = (e) => {
+    if (e.data.status === "success") {
+      console.log("Auth worker completed.");
+      terminateWorker();
+    }
+    if (e.data.status === "error") {
+      console.error("Worker DB Error:", e.data.error);
+      terminateWorker();
+    }
+  };
 
-    const tables = [db.serverMember, db.serverRole, db.channel];
+  authWorker.postMessage({ type: "AUTH_SUCCESS", payload });
+};
 
-    db.transaction('rw', tables, async () => {   
-        db.serverMember.clear();
-        db.serverMember.bulkAdd(payload.serverMembers);
-
-        db.serverRole.clear();
-        db.serverRole.bulkAdd(payload.serverRoles);
-
-        db.channel.clear();
-        db.channel.bulkAdd(payload.channels);
-    })
-
-    
-    
-
-}
+const terminateWorker = () => {
+  if (authWorker) {
+    authWorker.terminate();
+    authWorker = null;
+  }
+};
