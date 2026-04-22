@@ -16,7 +16,6 @@ interface RootProps {
   href?: string;
   handleColor?: string;
   alertColor?: string;
-  gap?: number;
   class?: string;
 }
 const Root = (props: RootProps) => (
@@ -36,12 +35,7 @@ const Root = (props: RootProps) => (
     onContextMenu={props.onContextMenu}
     onMouseLeave={props.onMouseLeave}
   >
-    <div
-      class={cn(style.itemContent, "itemContent")}
-      style={{ gap: `${props.gap}px` }}
-    >
-      {props.children}
-    </div>
+    {props.children}
   </Dynamic>
 );
 

@@ -6,13 +6,18 @@
   position: relative;
   display: flex;
   align-items: center;
+
+  flex: 1;
   flex-shrink: 0;
+  padding: 6px;
+  padding-left: 10px;
   border-radius: 8px;
   color: inherit;
   cursor: pointer;
   user-select: none;
   transition: 0.2s;
   text-decoration: none;
+  gap: 4px;
 
   &:hover {
     background-color: hsl(216deg 7% 28% / 40%);
@@ -75,12 +80,4 @@
   .itemContent {
     padding-left: 6px;
   }
-}
-.itemContent {
-  display: flex;
-  align-items: center;
-  flex: 1;
-  padding: 6px;
-  padding-left: 10px;
-  gap: 4px;
 }
