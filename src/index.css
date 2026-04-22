@@ -1,0 +1,18 @@
+
+:root {
+
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  color: white;
+  background-color: black;
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+#root {
+
+}
