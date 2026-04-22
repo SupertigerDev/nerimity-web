@@ -1,3 +1,4 @@
+import { useAccount } from "../store/accountStore";
 import AuthWorker from "./handleAuthWorker?worker";
 
 let authWorker: Worker | null = null;
@@ -10,6 +11,8 @@ export const socketEventHandler = (event: string, payload: any) => {
 
 const handleAuthenticated = (payload: any) => {
   authWorker = new AuthWorker();
+  const account = useAccount();
+  account.setStore("user", payload.user);
 
   authWorker.onmessage = (e) => {
     if (e.data.status === "success") {

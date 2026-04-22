@@ -30,7 +30,7 @@ export interface Server {
   name: string;
   defaultChannelId: string;
 }
-interface User {
+export interface User {
   id: string;
   username: string;
 }
@@ -50,7 +50,7 @@ class Database extends Dexie {
   constructor() {
     super("nerimity-db");
     this.version(1).stores({
-      serverMembers: "id, serverId",
+      serverMembers: "id, serverId, [serverId+userId], userId",
       serverRoles: "id, serverId",
       channels: "id, serverId",
       servers: "id",
