@@ -1,6 +1,6 @@
 import { Dexie } from "dexie";
 
-interface ServerMember {
+export interface ServerMember {
   id: string;
   serverId: string;
 }
@@ -23,6 +23,7 @@ export interface Channel {
   name?: string;
   type: ChannelType;
   icon?: string;
+  categoryId?: string;
 }
 
 export interface Server {
@@ -49,10 +50,10 @@ class Database extends Dexie {
 
   constructor() {
     super("nerimity-db");
-    this.version(1).stores({
+    this.version(2).stores({
       serverMembers: "id, serverId, [serverId+userId], userId",
       serverRoles: "id, serverId",
-      channels: "id, serverId",
+      channels: "id, serverId, order",
       servers: "id",
       users: "id",
       customEmojis: "id",

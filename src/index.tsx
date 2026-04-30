@@ -1,8 +1,8 @@
 /* @refresh reload */
 import { render } from '@solidjs/web';
 import './index.css'
-import App from './App.tsx'
+import { AppRouter } from './AppRouter';
 
 const root = document.getElementById('root')
 
-render(() => <App />, root!)
+render(() => <AppRouter />, root!)
