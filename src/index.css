@@ -1,17 +1,14 @@
 :root {
-  --primary-color: #1e90ff;
+  --bg-color: black;
+  --text-color: white;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-color);
+  color: white;
 }
 
 * {
   box-sizing: border-box;
-}
-body {
-  margin: 0;
-  color: white;
-  background-color: black;
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-#root {
-  height: 100vh;
 }

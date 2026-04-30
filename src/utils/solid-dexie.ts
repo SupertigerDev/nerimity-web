@@ -2,13 +2,14 @@
 import { liveQuery, type PromiseExtended } from "dexie";
 import {
   createEffect,
-  on,
   onCleanup,
   type Accessor,
   type Setter,
   createSignal,
+  reconcile,
+  createStore,
+  type StoreSetter,
 } from "solid-js";
-import { createStore, reconcile, type SetStoreFunction } from "solid-js/store";
 
 type ReconcileOptions = Parameters<typeof reconcile>[1];
 
@@ -20,9 +21,8 @@ export function createDexieSignalQuery<T>(
   const [store, setStore] = createSignal<T | undefined>(undefined);
 
   createEffect(
-    on(querier, () => {
-      fromStore<T>(liveQuery(querier), store, setStore);
-    }),
+    querier,
+    () => { fromStore<T>(liveQuery(querier), store, setStore) },
   );
 
   return store;
@@ -31,13 +31,12 @@ export function createDexieSignalQuery<T>(
 export function createDexieArrayQuery<T>(
   querier: () => T[] | Promise<T[]>,
   options?: ReconcileOptions,
-): T[] {
+): readonly T[] {
   const [store, setStore] = createStore<T[]>([]);
 
   createEffect(
-    on(querier, () => {
-      fromReconcileStore<T[]>(liveQuery(querier), store, setStore, options);
-    }),
+    querier,
+    () => { fromReconcileStore<T[]>(liveQuery(querier), store as T[], setStore, options) }
   );
 
   return store;
@@ -50,8 +49,8 @@ function fromReconcileStore<T>(
     ) => (() => void) | { unsubscribe: () => void };
   },
   store: T,
-  setStore: SetStoreFunction<T>,
-  options: ReconcileOptions = { key: "id" },
+  setStore: StoreSetter<T>,
+  options: ReconcileOptions = "id",
 ): T {
   const unsub = producer.subscribe((v) => setStore(reconcile(v, options)));
   onCleanup(() => ("unsubscribe" in unsub ? unsub.unsubscribe() : unsub()));
