@@ -17,6 +17,7 @@ function createServerMemberStore () {
       if (!authenticated) return;
       updateCurrentServerMembers();
     })
+
   
 
 

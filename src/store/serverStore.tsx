@@ -21,10 +21,7 @@ function createServerStore () {
     updateCurrentServerChannels();
   })
 
-
-
-
-
+  
 
 
   return { currentServerId, setCurrentServerId, servers, currentServer, currentServerChannels };
