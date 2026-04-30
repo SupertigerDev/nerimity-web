@@ -11,5 +11,5 @@ export function createDexieArrayQuery<T>(querier: () => Promise<T[]>) {
       refresh(store);
     }
   };
-  return [store, updateStore as UpdateStore] as const;
+  return [store, setStore, updateStore as UpdateStore] as const;
 }

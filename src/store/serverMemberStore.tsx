@@ -1,27 +1,21 @@
-import {  createEffect, createRoot} from "solid-js";
-import { db } from "../db";
-import { serverStore } from "./serverStore";
-import { createDexieArrayQuery } from "../utils/dexie-store";
-import { accountStore } from "./accountStore";
-
+import { createRoot, createStore } from "solid-js";
+import type { ServerMember } from "../db";
 
 
 export const serverMemberStore = createRoot(createServerMemberStore);
 
 
-function createServerMemberStore () {
-  const [currentServerMembers, updateCurrentServerMembers] = createDexieArrayQuery(() => db.serverMember.where("serverId").equals(serverStore.currentServerId() || "").toArray());
-  
-  
-    createEffect(accountStore.authenticated, (authenticated) => {
-      if (!authenticated) return;
-      updateCurrentServerMembers();
+function createServerMemberStore() {
+  const [serverMembers, _setServerMembers] = createStore<Record<string, ServerMember>>({});
+
+  const setServerMembers = (serverMembers: ServerMember[]) => {
+    _setServerMembers(s => {
+      for (let i = 0; i < serverMembers.length; i++) {
+        s[serverMembers[i].id] = serverMembers[i];
+      }
     })
-
-  
-
+  };
 
 
-  return { currentServerMembers };
-
+  return { setServerMembers, serverMembers };
 };

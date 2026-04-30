@@ -1,36 +1,30 @@
 import { accountStore } from "../store/accountStore";
-import AuthWorker from "./handleAuthWorker?worker";
+import { channelStore } from "../store/channelStore";
+import { serverMemberStore } from "../store/serverMemberStore";
+import { serverStore } from "../store/serverStore";
 
-let authWorker: Worker | null = null;
 
 export const socketEventHandler = (event: string, payload: any) => {
   if (event === "user:authenticated") {
     onAuthenticated(payload);
   }
+  if (event === "server:channel_updated") {
+    onServerChannelUpdated(payload)
+  }
 };
 
 const onAuthenticated = (payload: any) => {
-  authWorker = new AuthWorker();
-  // account.setStore("user", payload.user);
+  accountStore.setAuthenticated(true);
 
-  authWorker.onmessage = (e) => {
-    if (e.data.status === "success") {
-      console.log("Auth worker completed.");
-      accountStore.setAuthenticated(true);
-      terminateWorker();
-    }
-    if (e.data.status === "error") {
-      console.error("Worker DB Error:", e.data.error);
-      terminateWorker();
-    }
-  };
+  channelStore.setChannels(payload.channels);
+  serverStore.setServers(payload.servers);
+  serverMemberStore.setServerMembers(payload.serverMembers);
 
-  authWorker.postMessage({ type: "AUTH_SUCCESS", payload });
+
+
 };
 
-const terminateWorker = () => {
-  if (authWorker) {
-    authWorker.terminate();
-    authWorker = null;
-  }
-};
+const onServerChannelUpdated = (payload: any) => {
+  channelStore.updateChannel(payload.channelId, payload);
+}
+

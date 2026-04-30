@@ -7,11 +7,12 @@ export const ServerChannelList = () => {
 
   const orderedChannels = createMemo(() => {
     const results: Channel[] = [];
+    const currentChannels = serverStore.currentServerChannels();
 
-    for (const channel of serverStore.currentServerChannels) {
-    if (channel.type === ChannelType.CATEGORY) {
+    for (const channel of currentChannels) {
+      if (channel.type === ChannelType.CATEGORY) {
         results.push(channel);
-        results.push(...serverStore.currentServerChannels.filter((c) => c.categoryId == channel.id));
+        results.push(...currentChannels.filter((c) => c.categoryId == channel.id));
       } else if (!channel.categoryId) {
         results.push(channel);
       }
@@ -24,8 +25,8 @@ export const ServerChannelList = () => {
   return <div>
     <Loading>
       <For each={orderedChannels()}>
-      {(channel) => <A href={`/app/servers/${channel().serverId}/${channel().id}`} style={{width: "100px", display: 'block', overflow: 'hidden'}}>{channel().name}</A>}
-    </For>
+        {(channel) => <A href={`/app/servers/${channel().serverId}/${channel().id}`} style={{ width: "100px", display: 'block', overflow: 'hidden' }}>{channel().name}</A>}
+      </For>
     </Loading>
   </div>
 

@@ -1,14 +1,13 @@
-import { Dexie } from "dexie";
 
 export interface ServerMember {
   id: string;
   serverId: string;
 }
 
-interface ServerRole {
-  id: string;
-  serverId: string;
-}
+// interface ServerRole {
+//   id: string;
+//   serverId: string;
+// }
 
 export const ChannelType = {
   DM_TEXT: 0,
@@ -24,6 +23,7 @@ export interface Channel {
   type: ChannelType;
   icon?: string;
   categoryId?: string;
+  order?: number;
 }
 
 export interface Server {
@@ -36,39 +36,7 @@ export interface User {
   username: string;
 }
 
-interface CustomEmoji {
-  id: string;
-}
+// interface CustomEmoji {
+//   id: string;
+// }
 
-class Database extends Dexie {
-  user: Dexie.Table<User, string>;
-  serverMember: Dexie.Table<ServerMember, string>;
-  serverRole: Dexie.Table<ServerRole, string>;
-  channel: Dexie.Table<Channel, string>;
-  server: Dexie.Table<Server, string>;
-  customEmoji: Dexie.Table<CustomEmoji, string>;
-
-  constructor() {
-    super("nerimity-db");
-    this.version(2).stores({
-      serverMembers: "id, serverId, [serverId+userId], userId",
-      serverRoles: "id, serverId",
-      channels: "id, serverId, order",
-      servers: "id",
-      users: "id",
-      customEmojis: "id",
-    });
-    this.serverMember = this.table("serverMembers");
-    this.serverRole = this.table("serverRoles");
-    this.channel = this.table("channels");
-    this.server = this.table("servers");
-    this.user = this.table("users");
-    this.customEmoji = this.table("customEmojis");
-
-    this.on("versionchange", () => {
-      location.reload();
-    });
-  }
-}
-
-export const db = new Database();

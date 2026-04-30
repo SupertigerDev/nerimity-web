@@ -1,29 +1,36 @@
-import { createEffect, createMemo, createRoot, createSignal } from "solid-js";
-import { db } from "../db";
-import { createDexieArrayQuery } from "../utils/dexie-store";
-import { accountStore } from "./accountStore";
-
-
+import { createMemo, createRoot, createSignal, createStore } from "solid-js";
+import { serverMemberStore } from "./serverMemberStore";
+import type { Server } from "../db";
+import { channelStore } from "./channelStore";
 
 export const serverStore = createRoot(createServerStore);
 
-
-function createServerStore () {
+function createServerStore() {
   const [currentServerId, setCurrentServerId] = createSignal<string | undefined>(undefined);
-  const [servers, updateServers] = createDexieArrayQuery(() => db.server.toArray());
-  const [currentServerChannels, updateCurrentServerChannels] = createDexieArrayQuery(() => db.channel.where("serverId").equals(currentServerId() || "").sortBy("order"));
-  
-  const currentServer = createMemo(() => servers.find((s) => s.id === currentServerId()));
+  const [servers, _setServers] = createStore<Record<string, Server>>({});
 
-  createEffect(accountStore.authenticated, (authenticated) => {
-    if (!authenticated) return;
-    updateServers();
-    updateCurrentServerChannels();
-  })
+  const setServers = (servers: any[]) => {
+    _setServers(s => {
+      for (let i = 0; i < servers.length; i++) {
+        s[servers[i].id] = servers[i];
+      }
+    })
+  };
 
-  
+  const currentChannelMembers = createMemo(() => {
+    const _currentServerId = currentServerId();
+    return Object.values(serverMemberStore.serverMembers).filter((m) => m.serverId === _currentServerId);
+  });
 
 
-  return { currentServerId, setCurrentServerId, servers, currentServer, currentServerChannels };
+  const currentServerChannels = createMemo(() => {
+    const _currentServerId = currentServerId();
+    return Object.values(channelStore.channels).filter((c) => c.serverId === _currentServerId).sort((a, b) => a.order! - b.order!);
+  });
+
+  const array = createMemo(() => Object.values(servers));
+
+
+  return { array, currentServerId, setCurrentServerId, servers, setServers, currentChannelMembers, currentServerChannels };
 
 };
