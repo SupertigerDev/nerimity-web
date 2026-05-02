@@ -1,20 +1,26 @@
-import { createEffect, For, Loading } from "solid-js";
+import style from "./ServerList.module.css";
+import { createEffect, For } from "solid-js";
 import { serverStore } from "../../store/serverStore";
 import { A } from "@solidjs/router";
+import type { Server } from "../../db";
+import { Avatar } from "../../components/Avatar";
 
 export const ServerList = () => {
-
   createEffect(serverStore.currentChannelMembers, (members) => {
     console.log(members);
   });
 
-
-  return <div>
-    <Loading>
+  return (
+    <div class={style.serverList}>
       <For each={serverStore.array()}>
-        {(server) => <A href={`/app/servers/${server().id}/${server().defaultChannelId}`} style={{ width: "100px", display: 'block', overflow: 'hidden' }}>{server().name}</A>}
+        {(server) => <ServerItem server={server()} />}
       </For>
-    </Loading>
-  </div>
-
+    </div>
+  );
 };
+
+const ServerItem = (props: { server: Server }) => (
+  <A href={`/app/servers/${props.server.id}/${props.server.defaultChannelId}`}>
+    <Avatar server={props.server} size={48} />
+  </A>
+);

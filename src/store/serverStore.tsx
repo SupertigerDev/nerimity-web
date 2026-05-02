@@ -19,7 +19,7 @@ function createServerStore() {
 
   const currentChannelMembers = createMemo(() => {
     const _currentServerId = currentServerId();
-    return Object.values(serverMemberStore.serverMembers).filter((m) => m.serverId === _currentServerId);
+    return Object.values(serverMemberStore.serverMembers[_currentServerId!] || {});
   });
 
 

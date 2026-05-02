@@ -6,12 +6,17 @@ export const serverMemberStore = createRoot(createServerMemberStore);
 
 
 function createServerMemberStore() {
-  const [serverMembers, _setServerMembers] = createStore<Record<string, ServerMember>>({});
+  const [serverMembers, _setServerMembers] = createStore<Record<string, Record<string, ServerMember>>>({});
 
   const setServerMembers = (serverMembers: ServerMember[]) => {
-    _setServerMembers(s => {
+    _setServerMembers(state => {
       for (let i = 0; i < serverMembers.length; i++) {
-        s[serverMembers[i].id] = serverMembers[i];
+        const member = serverMembers[i];
+        if (!state[member.serverId]) {
+          state[member.serverId] = {};
+        }
+        
+        state[member.serverId][member.id] = serverMembers[i];
       }
     })
   };

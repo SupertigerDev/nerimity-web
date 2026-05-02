@@ -1,4 +1,3 @@
-
 export interface ServerMember {
   id: string;
   serverId: string;
@@ -29,6 +28,7 @@ export interface Channel {
 export interface Server {
   id: string;
   name: string;
+  hexColor: string;
   defaultChannelId: string;
 }
 export interface User {
@@ -39,4 +39,3 @@ export interface User {
 // interface CustomEmoji {
 //   id: string;
 // }
-
