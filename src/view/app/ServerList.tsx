@@ -6,9 +6,9 @@ import type { Server } from "../../db";
 import { Avatar } from "../../components/Avatar";
 
 export const ServerList = () => {
-  createEffect(serverStore.currentChannelMembers, (members) => {
-    console.log(members);
-  });
+  // createEffect(serverStore.currentChannelMembers, (members) => {
+  //   console.log(members);
+  // });
 
   return (
     <div class={style.serverList}>
