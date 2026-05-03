@@ -1,4 +1,12 @@
-import { createEffect, createMemo, For } from "solid-js";
+import {
+  createEffect,
+  createMemo,
+  createStore,
+  For,
+  Match,
+  reconcile,
+  Switch,
+} from "solid-js";
 import { channelStore } from "../../store/channelStore";
 import { serverRolesStore } from "../../store/serverRolesStore";
 import type { ServerMember, ServerRole } from "../../db";
@@ -7,6 +15,10 @@ import { ChannelPermissionFlag } from "../../utils/ChannelPermissionFlag";
 import { RolePermissionFlag } from "../../utils/RolePermissionFlag";
 import { serverStore } from "../../store/serverStore";
 import { userPresenceStore } from "../../store/UserPresenceStore";
+
+type Categorized =
+  | { type: "r"; role: ServerRole; count: number; id: string }
+  | { type: "m"; member: ServerMember; id: string };
 
 const offlineRole: ServerRole = {
   id: "offline",
@@ -17,7 +29,8 @@ const offlineRole: ServerRole = {
 };
 
 export const ServerMemberList = () => {
-  const categorizedMembers = createMemo(() => {
+  const [categorized, setCategorized] = createStore<Categorized[]>([]);
+  const categorizedMembers = () => {
     const members = serverStore.currentMembers();
     const channelPermissions = channelStore.currentPermissions();
     const serverRoles = serverRolesStore.currentServerRoles();
@@ -89,18 +102,15 @@ export const ServerMemberList = () => {
       }
     }
 
-    const result: (
-      | { type: "r"; role: ServerRole; count: number }
-      | { type: "m"; member: ServerMember }
-    )[] = [];
+    const result: Categorized[] = [];
 
     for (let i = 0; i < sortedRoles.length; i++) {
       const role = sortedRoles[i]!;
       const bucket = buckets[role.id];
       if (bucket) {
-        result.push({ type: "r", role, count: bucket.length });
+        result.push({ type: "r", role, count: bucket.length, id: role.id });
         for (let j = 0; j < bucket.length; j++) {
-          result.push({ type: "m", member: bucket[j]! });
+          result.push({ type: "m", member: bucket[j]!, id: bucket[j]!.id });
         }
       }
     }
@@ -110,29 +120,40 @@ export const ServerMemberList = () => {
         type: "r",
         role: offlineRole,
         count: offlineMembers.length,
+        id: offlineRole.id,
       });
       for (let i = 0; i < offlineMembers.length; i++) {
-        result.push({ type: "m", member: offlineMembers[i]! });
+        result.push({
+          type: "m",
+          member: offlineMembers[i]!,
+          id: offlineMembers[i]!.id,
+        });
       }
     }
 
     return result;
+  };
+
+  createEffect(categorizedMembers, (members) => {
+    setCategorized(reconcile(members, "id"));
   });
 
   return (
     <div>
-      <For each={categorizedMembers()}>
-        {(_item) => {
-          const item = _item();
-          if (item.type === "m") {
-            return <div>m</div>;
-          } else {
-            return (
-              <div>
-                {item.role.name} - {item.count}
-              </div>
-            );
-          }
+      <For each={categorized}>
+        {(item) => {
+          return (
+            <Switch>
+              <Match when={item().type === "r"}>
+                <div>
+                  {item().role.name} - {item().count}
+                </div>
+              </Match>
+              <Match when={item().type === "m"}>
+                <div>m</div>
+              </Match>
+            </Switch>
+          );
         }}
       </For>
     </div>
