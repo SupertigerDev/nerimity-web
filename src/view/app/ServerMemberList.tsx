@@ -142,19 +142,17 @@ export const ServerMemberList = () => {
       }}
     >
       <VirtualList data={categorizedMembers} typeHeights={{ m: 18, r: 18 }}>
-        {(item) => <div>{item.type}</div>}
-      </VirtualList>
-      {/* <For each={categorizedMembers}>
         {(item) => {
-          switch (item().type) {
+          switch (item.type) {
             case "r":
-              return (
-                <ServerRoleListItem role={item().role} count={item().count} />
-              );
+              return <ServerRoleListItem role={item.role} count={item.count} />;
             case "m":
-              return <ServerMemberListItem member={item().member} />;
+              return <ServerMemberListItem member={item.member} />;
           }
         }}
+      </VirtualList>
+      {/* <For each={categorizedMembers}>
+        
       </For> */}
     </div>
   );
