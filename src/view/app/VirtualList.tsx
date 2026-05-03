@@ -45,7 +45,11 @@ export function VirtualList<T, V extends string>(
   return (
     <div ref={setContainer} style={{ height: totalHeight() + "px" }}>
       <For each={currentChunk()}>
-        {(item) => <div>{props.children(item())}</div>}
+        {(item) => (
+          <div style={{ height: props.typeHeights[item().type] + "px" }}>
+            {props.children(item())}
+          </div>
+        )}
       </For>
     </div>
   );

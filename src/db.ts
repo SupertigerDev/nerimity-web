@@ -10,6 +10,7 @@ export interface ServerRole {
   serverId: string;
   permissions: number;
   order: number;
+  name: string;
   hideRole: boolean;
 }
 
