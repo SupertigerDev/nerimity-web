@@ -1,20 +1,13 @@
-import {
-  createEffect,
-  createMemo,
-  createStore,
-  For,
-  Match,
-  reconcile,
-  Switch,
-} from "solid-js";
+import { createProjection, createSignal, For } from "solid-js";
 import { channelStore } from "../../store/channelStore";
 import { serverRolesStore } from "../../store/serverRolesStore";
 import type { ServerMember, ServerRole } from "../../db";
 import { hasBit } from "../../utils/bitwise";
-import { ChannelPermissionFlag } from "../../utils/ChannelPermissionFlag";
+import { ChannelPermissionFlag } from "../../utils/channelPermissionFlag";
 import { RolePermissionFlag } from "../../utils/RolePermissionFlag";
 import { serverStore } from "../../store/serverStore";
 import { userPresenceStore } from "../../store/UserPresenceStore";
+import { VirtualList } from "./VirtualList";
 
 type Categorized =
   | { type: "r"; role: ServerRole; count: number; id: string }
@@ -29,133 +22,156 @@ const offlineRole: ServerRole = {
 };
 
 export const ServerMemberList = () => {
-  const [categorized, setCategorized] = createStore<Categorized[]>([]);
-  const categorizedMembers = () => {
-    const members = serverStore.currentMembers();
-    const channelPermissions = channelStore.currentPermissions();
-    const serverRoles = serverRolesStore.currentServerRoles();
-    const defaultRole = serverRolesStore.currentServerDefaultRole();
-    const server = serverStore.currentServer();
-    const creatorId = server?.createdById;
+  const [scrollEl, setScrollEl] = createSignal<HTMLElement | null>(null);
 
-    const sortedRoles = serverRolesStore
-      .currentServerSortedRoles()
-      .filter((r) => !r.hideRole);
+  const categorizedMembers = createProjection(
+    () => {
+      const members = serverStore.currentMembers();
+      const channelPermissions = channelStore.currentPermissions();
+      const serverRoles = serverRolesStore.currentServerRoles();
+      const defaultRole = serverRolesStore.currentServerDefaultRole();
+      const server = serverStore.currentServer();
+      const creatorId = server?.createdById;
 
-    const roleOrder: Record<string, number> = {};
-    for (let i = 0; i < sortedRoles.length; i++) {
-      roleOrder[sortedRoles[i]!.id] = i;
-    }
+      const sortedRoles = serverRolesStore
+        .currentServerSortedRoles()
+        .filter((r) => !r.hideRole);
 
-    const hasDefaultChannelPerm = hasBit(
-      channelPermissions[defaultRole?.id!],
-      ChannelPermissionFlag.publicChannel.bit,
-    );
-    const hasDefaultRolePerm = hasBit(
-      defaultRole?.permissions,
-      RolePermissionFlag.admin.bit,
-    );
-    const isDefaultPublic = hasDefaultChannelPerm || hasDefaultRolePerm;
+      const roleOrder: Record<string, number> = {};
+      for (let i = 0; i < sortedRoles.length; i++) {
+        roleOrder[sortedRoles[i]!.id] = i;
+      }
 
-    const buckets: Record<string, ServerMember[]> = {};
-    const offlineMembers: ServerMember[] = [];
+      const hasDefaultChannelPerm = hasBit(
+        channelPermissions[defaultRole?.id!],
+        ChannelPermissionFlag.publicChannel.bit,
+      );
+      const hasDefaultRolePerm = hasBit(
+        defaultRole?.permissions,
+        RolePermissionFlag.admin.bit,
+      );
+      const isDefaultPublic = hasDefaultChannelPerm || hasDefaultRolePerm;
 
-    for (let i = 0; i < members.length; i++) {
-      const member = members[i]!;
-      const isCreator = member.userId === creatorId;
-      let canViewChannel = isCreator || isDefaultPublic;
+      const buckets: Record<string, ServerMember[]> = {};
+      const offlineMembers: ServerMember[] = [];
 
-      let topRoleId: string | null = null;
-      let bestIndex = Infinity;
+      for (let i = 0; i < members.length; i++) {
+        const member = members[i]!;
+        const isCreator = member.userId === creatorId;
+        let canViewChannel = isCreator || isDefaultPublic;
 
-      const roleIds = member.roleIds;
-      for (let y = 0; y < roleIds.length; y++) {
-        const roleId = roleIds[y]!;
+        let topRoleId: string | null = null;
+        let bestIndex = Infinity;
 
-        if (!canViewChannel) {
-          const role = serverRoles[roleId];
-          canViewChannel =
-            hasBit(role?.permissions, RolePermissionFlag.admin.bit) ||
-            hasBit(
-              channelPermissions[roleId],
-              ChannelPermissionFlag.publicChannel.bit,
-            );
+        const roleIds = member.roleIds;
+        for (let y = 0; y < roleIds.length; y++) {
+          const roleId = roleIds[y]!;
+
+          if (!canViewChannel) {
+            const role = serverRoles[roleId];
+            canViewChannel =
+              hasBit(role?.permissions, RolePermissionFlag.admin.bit) ||
+              hasBit(
+                channelPermissions[roleId],
+                ChannelPermissionFlag.publicChannel.bit,
+              );
+          }
+
+          const idx = roleOrder[roleId];
+          if (idx !== undefined && idx < bestIndex) {
+            bestIndex = idx;
+            topRoleId = roleId;
+          }
         }
 
-        const idx = roleOrder[roleId];
-        if (idx !== undefined && idx < bestIndex) {
-          bestIndex = idx;
-          topRoleId = roleId;
+        if (!canViewChannel) continue;
+
+        if (!userPresenceStore.presences[member.userId]) {
+          offlineMembers.push(member);
+          continue;
+        }
+
+        const targetRoleId = topRoleId ?? defaultRole?.id;
+        if (targetRoleId) {
+          (buckets[targetRoleId] ??= []).push(member);
         }
       }
 
-      if (!canViewChannel) continue;
+      const result: Categorized[] = [];
 
-      if (!userPresenceStore.presences[member.userId]) {
-        offlineMembers.push(member);
-        continue;
-      }
-
-      const targetRoleId = topRoleId ?? defaultRole?.id;
-      if (targetRoleId) {
-        (buckets[targetRoleId] ??= []).push(member);
-      }
-    }
-
-    const result: Categorized[] = [];
-
-    for (let i = 0; i < sortedRoles.length; i++) {
-      const role = sortedRoles[i]!;
-      const bucket = buckets[role.id];
-      if (bucket) {
-        result.push({ type: "r", role, count: bucket.length, id: role.id });
-        for (let j = 0; j < bucket.length; j++) {
-          result.push({ type: "m", member: bucket[j]!, id: bucket[j]!.id });
+      for (let i = 0; i < sortedRoles.length; i++) {
+        const role = sortedRoles[i]!;
+        const bucket = buckets[role.id];
+        if (bucket) {
+          result.push({ type: "r", role, count: bucket.length, id: role.id });
+          for (let j = 0; j < bucket.length; j++) {
+            result.push({ type: "m", member: bucket[j]!, id: bucket[j]!.id });
+          }
         }
       }
-    }
 
-    if (offlineMembers.length && offlineRole) {
-      result.push({
-        type: "r",
-        role: offlineRole,
-        count: offlineMembers.length,
-        id: offlineRole.id,
-      });
-      for (let i = 0; i < offlineMembers.length; i++) {
+      if (offlineMembers.length && offlineRole) {
         result.push({
-          type: "m",
-          member: offlineMembers[i]!,
-          id: offlineMembers[i]!.id,
+          type: "r",
+          role: offlineRole,
+          count: offlineMembers.length,
+          id: offlineRole.id,
         });
+        for (let i = 0; i < offlineMembers.length; i++) {
+          result.push({
+            type: "m",
+            member: offlineMembers[i]!,
+            id: offlineMembers[i]!.id,
+          });
+        }
       }
-    }
 
-    return result;
-  };
-
-  createEffect(categorizedMembers, (members) => {
-    setCategorized(reconcile(members, "id"));
-  });
+      return result;
+    },
+    [],
+    { key: "id" },
+  );
 
   return (
-    <div>
-      <For each={categorized}>
+    <div
+      style={{
+        height: "100vh",
+        width: "300px",
+        overflow: "auto",
+        display: "block",
+      }}
+    >
+      <VirtualList data={categorizedMembers} typeHeights={{ m: 18, r: 18 }}>
+        {(item) => <div>{item.type}</div>}
+      </VirtualList>
+      {/* <For each={categorizedMembers}>
         {(item) => {
-          return (
-            <Switch>
-              <Match when={item().type === "r"}>
-                <div>
-                  {item().role.name} - {item().count}
-                </div>
-              </Match>
-              <Match when={item().type === "m"}>
-                <div>m</div>
-              </Match>
-            </Switch>
-          );
+          switch (item().type) {
+            case "r":
+              return (
+                <ServerRoleListItem role={item().role} count={item().count} />
+              );
+            case "m":
+              return <ServerMemberListItem member={item().member} />;
+          }
         }}
-      </For>
+      </For> */}
+    </div>
+  );
+};
+
+const ServerRoleListItem = (props: { role: ServerRole; count: number }) => {
+  return (
+    <div>
+      <div>{props.role.name}</div>
+      <div>{props.count}</div>
+    </div>
+  );
+};
+const ServerMemberListItem = (props: { member: ServerMember }) => {
+  return (
+    <div>
+      <div>{props.member.userId}</div>
     </div>
   );
 };

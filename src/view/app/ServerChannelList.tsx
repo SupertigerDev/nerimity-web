@@ -24,18 +24,16 @@ export const ServerChannelList = () => {
 
   return (
     <div>
-      <Loading>
-        <For each={orderedChannels()}>
-          {(channel) => (
-            <A
-              href={`/app/servers/${channel().serverId}/${channel().id}`}
-              style={{ width: "100px", display: "block", overflow: "hidden" }}
-            >
-              {channel().name}
-            </A>
-          )}
-        </For>
-      </Loading>
+      <For each={orderedChannels()}>
+        {(channel) => (
+          <A
+            href={`/app/servers/${channel().serverId}/${channel().id}`}
+            style={{ width: "100px", display: "block", overflow: "hidden" }}
+          >
+            {channel().name}
+          </A>
+        )}
+      </For>
     </div>
   );
 };
