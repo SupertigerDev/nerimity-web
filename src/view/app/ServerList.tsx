@@ -1,5 +1,5 @@
 import style from "./ServerList.module.css";
-import { createEffect, For } from "solid-js";
+import { For } from "solid-js";
 import { serverStore } from "../../store/serverStore";
 import { A } from "@solidjs/router";
 import type { Server } from "../../db";

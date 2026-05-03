@@ -5,21 +5,25 @@ import { serverStore } from "../../store/serverStore";
 import { ServerList } from "./ServerList";
 import { socket } from "../../services/socket";
 import { ServerChannelList } from "./ServerChannelList";
+import { ServerMemberList } from "./ServerMemberList";
 
 export const App = () => {
   const params = useParams<{ serverId?: string; channelId?: string }>();
   socket.connect();
 
+  createEffect(
+    () => [params.channelId, params.serverId],
+    ([channelId, serverId]) => {
+      channelStore.setCurrentChannelId(channelId);
+      serverStore.setCurrentServerId(serverId);
+    },
+  );
 
-  createEffect(() => [params.channelId, params.serverId], ([channelId, serverId]) => {
-    channelStore.setCurrentChannelId(channelId);
-    serverStore.setCurrentServerId(serverId);
-  })
-
-
-  return <div style={{display: 'flex'}}>
-    <ServerList/>
-    <ServerChannelList/>
-  </div>
-
+  return (
+    <div style={{ display: "flex" }}>
+      <ServerList />
+      <ServerChannelList />
+      <ServerMemberList />
+    </div>
+  );
 };

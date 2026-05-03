@@ -1,5 +1,10 @@
 .serverList {
   display: flex;
+  overflow: auto;
   flex-direction: column;
+  height: 100vh;
   gap: 8px;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }

@@ -1,12 +1,17 @@
 export interface ServerMember {
   id: string;
+  userId: string;
   serverId: string;
+  roleIds: string[];
 }
 
-// interface ServerRole {
-//   id: string;
-//   serverId: string;
-// }
+export interface ServerRole {
+  id: string;
+  serverId: string;
+  permissions: number;
+  order: number;
+  hideRole: boolean;
+}
 
 export const ChannelType = {
   DM_TEXT: 0,
@@ -23,6 +28,12 @@ export interface Channel {
   icon?: string;
   categoryId?: string;
   order?: number;
+  permissions?: ChannelPermissions[];
+}
+
+export interface ChannelPermissions {
+  permissions: number;
+  roleId: string;
 }
 
 export interface Server {
@@ -30,10 +41,17 @@ export interface Server {
   name: string;
   hexColor: string;
   defaultChannelId: string;
+  defaultRoleId: string;
+  createdById: string;
 }
 export interface User {
   id: string;
   username: string;
+}
+
+export interface UserPresence {
+  status: number;
+  userId: string;
 }
 
 // interface CustomEmoji {

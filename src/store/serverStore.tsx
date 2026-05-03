@@ -1,9 +1,9 @@
 import {
-  createEffect,
   createMemo,
   createRoot,
   createSignal,
   createStore,
+  reconcile,
 } from "solid-js";
 import { serverMemberStore } from "./serverMemberStore";
 import type { Server } from "../db";
@@ -18,21 +18,26 @@ function createServerStore() {
   const [servers, _setServers] = createStore<Record<string, Server>>({});
 
   const setServers = (servers: any[]) => {
-    _setServers((s) => {
-      for (let i = 0; i < servers.length; i++) {
-        s[servers[i].id] = servers[i];
-      }
-    });
+    const s: Record<string, Server> = {};
+    for (let i = 0; i < servers.length; i++) {
+      s[servers[i].id] = servers[i];
+    }
+    _setServers(reconcile(s, "id"));
   };
 
-  const currentChannelMembers = createMemo(() => {
+  const currentServer = createMemo(() => {
+    const _currentServerId = currentServerId();
+    return servers[_currentServerId!];
+  });
+
+  const currentMembers = createMemo(() => {
     const _currentServerId = currentServerId();
     return Object.values(
       serverMemberStore.serverMembers[_currentServerId!] || {},
     );
   });
 
-  const currentServerChannels = createMemo(() => {
+  const currentChannels = createMemo(() => {
     const _currentServerId = currentServerId();
     return Object.values(channelStore.channels)
       .filter((c) => c.serverId === _currentServerId)
@@ -41,20 +46,14 @@ function createServerStore() {
 
   const array = createMemo(() => Object.values(servers));
 
-  const test = createMemo(() => {
-    console.log(array().flatMap((s) => s.customEmojis));
-    // return Object.values(servers).flatMap((s) => s.emojis);
-  });
-
-  createEffect(test, (emojis) => console.log(emojis));
-
   return {
+    currentServer,
     array,
     currentServerId,
     setCurrentServerId,
     servers,
     setServers,
-    currentChannelMembers,
-    currentServerChannels,
+    currentMembers,
+    currentChannels,
   };
 }
