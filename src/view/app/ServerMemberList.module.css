@@ -5,16 +5,12 @@
   padding: 4px;
   border-radius: 6px;
   gap: 8px;
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-  }
 }
 
 .serverRoleListItem {
   display: flex;
   align-items: center;
   height: 40px;
-  color: rgba(255, 255, 255, 0.6);
   background-color: black;
   font-weight: bold;
 }

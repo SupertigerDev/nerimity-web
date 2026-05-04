@@ -3,10 +3,10 @@
   height: var(--size);
 }
 .avatarInner {
- width: var(--size);
- height: var(--size);
- border-radius: 50%; 
- background-color: var(--color);
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  background-color: var(--color);
 }
 .avatarLetter {
   display: flex;
