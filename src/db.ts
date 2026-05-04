@@ -48,6 +48,8 @@ export interface Server {
 export interface User {
   id: string;
   username: string;
+  hexColor: string;
+  avatar?: string;
 }
 
 export interface UserPresence {

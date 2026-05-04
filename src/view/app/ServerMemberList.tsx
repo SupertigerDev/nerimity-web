@@ -1,10 +1,5 @@
-import {
-  createLoadingBoundary,
-  createMemo,
-  createProjection,
-  createSignal,
-  For,
-} from "solid-js";
+import style from "./ServerMemberList.module.css";
+import { createMemo, createProjection } from "solid-js";
 import { channelStore } from "../../store/channelStore";
 import { serverRolesStore } from "../../store/serverRolesStore";
 import type { ServerMember, ServerRole } from "../../db";
@@ -14,6 +9,8 @@ import { RolePermissionFlag } from "../../utils/RolePermissionFlag";
 import { serverStore } from "../../store/serverStore";
 import { userPresenceStore } from "../../store/UserPresenceStore";
 import { VirtualList } from "./VirtualList";
+import { userStore } from "../../store/userStore";
+import { Avatar } from "../../components/Avatar";
 
 type Categorized =
   | { type: "r"; role: ServerRole; count: number; id: string }
@@ -29,8 +26,6 @@ const offlineRole: ServerRole = {
 };
 
 export const ServerMemberList = () => {
-  const [scrollEl, setScrollEl] = createSignal<HTMLElement | null>(null);
-
   const categorizedMembers = createProjection(
     () => {
       const members = serverStore.currentMembers();
@@ -59,12 +54,8 @@ export const ServerMemberList = () => {
       );
       const isDefaultPublic = hasDefaultChannelPerm || hasDefaultRolePerm;
 
-      // Pre-snapshot presences as a plain Set to avoid reactive proxy
-      // re-subscriptions on every member lookup inside the loop
       const presenceSet = new Set(Object.keys(userPresenceStore.presences));
 
-      // Pre-build a Set of role IDs that grant channel visibility so the
-      // inner loop is a single O(1) has() call instead of two hasBit() calls
       const visibleRoleIds = new Set<string>();
       for (const roleId of Object.keys(channelPermissions)) {
         if (
@@ -109,8 +100,6 @@ export const ServerMemberList = () => {
             topRoleId = roleId;
           }
 
-          // Short-circuit once we have visibility confirmed and the best
-          // possible role rank (0 = highest priority in sorted list)
           if (canViewChannel && bestIndex === 0) break;
         }
 
@@ -171,7 +160,10 @@ export const ServerMemberList = () => {
         display: "block",
       }}
     >
-      <VirtualList data={categorizedMembers} typeHeights={{ m: 60, r: 20 }}>
+      <VirtualList
+        data={categorizedMembers}
+        typeHeights={{ m: { height: 40 }, r: { height: 40, sticky: true } }}
+      >
         {(item) => {
           switch (item.type) {
             case "r":
@@ -187,15 +179,18 @@ export const ServerMemberList = () => {
 
 const ServerRoleListItem = (props: { role: ServerRole; count: number }) => {
   return (
-    <div>
+    <div class={style.serverRoleListItem}>
       {props.role.name} -{props.count}
     </div>
   );
 };
 const ServerMemberListItem = (props: { member: ServerMember }) => {
+  const user = createMemo(() => userStore.users[props.member.userId]!);
+
   return (
-    <div>
-      <div>{props.member.userId}</div>
+    <div class={style.serverMemberListItem}>
+      <Avatar user={user()} size={32} />
+      <div>{user().username}</div>
     </div>
   );
 };

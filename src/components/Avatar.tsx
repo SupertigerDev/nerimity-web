@@ -37,7 +37,7 @@ export const Avatar = (props: AvatarProps) => {
           </div>
         }
       >
-        {(url) => <img class={style.avatarInner} src={url()} />}
+        {(url) => <img loading="lazy" class={style.avatarInner} src={url()} />}
       </Show>
     </div>
   );
