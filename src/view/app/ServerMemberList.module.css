@@ -11,6 +11,6 @@
   display: flex;
   align-items: center;
   height: 40px;
-  background-color: black;
+  background-color: var(--bg-color);
   font-weight: bold;
 }
