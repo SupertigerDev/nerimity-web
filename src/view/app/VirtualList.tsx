@@ -40,6 +40,7 @@ export function VirtualList<T, V extends string>(
     return () => {
       window.removeEventListener("resize", onResize);
       el.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(rafId);
     };
   });
 
@@ -49,32 +50,30 @@ export function VirtualList<T, V extends string>(
     return h;
   });
 
-  const currentChunk = createProjection(
-    () => {
-      const top = Math.max(0, scrollTop());
-      const bottom = scrollTop() + containerHeight();
+  const currentChunk = createMemo(() => {
+    const top = Math.max(0, scrollTop());
+    const bottom = scrollTop() + containerHeight();
 
-      const items: (Item<T, V> & { pos: number })[] = [];
+    const items: Item<T, V>[] = [];
+    const pos: number[] = [];
 
-      let height = 0;
-      for (let i = 0; i < props.data.length; i++) {
-        const item = props.data[i]!;
-        const { height: itemHeight, sticky } = props.typeHeights[item.type];
+    let height = 0;
+    for (let i = 0; i < props.data.length; i++) {
+      const item = props.data[i]!;
+      const { height: itemHeight, sticky } = props.typeHeights[item.type];
 
-        if (!sticky && height > bottom) break;
+      if (!sticky && height > bottom) break;
 
-        if (sticky || (height + itemHeight > top && height < bottom)) {
-          items.push({ ...item, pos: height });
-        }
-
-        height += itemHeight;
+      if (sticky || (height + itemHeight > top && height < bottom)) {
+        items.push(item);
+        pos.push(height);
       }
 
-      return items;
-    },
-    [],
-    { key: "id" },
-  );
+      height += itemHeight;
+    }
+
+    return { items, pos } as const;
+  });
 
   const activeStickyItem = createMemo(() => {
     let last: (Item<T, V> & { pos: number }) | null = null;
@@ -108,12 +107,12 @@ export function VirtualList<T, V extends string>(
           </div>
         )}
       </Show>
-      <For each={currentChunk}>
-        {(item) => (
+      <For each={currentChunk().items}>
+        {(item, i) => (
           <div
             style={{
               position: "absolute",
-              top: item().pos + "px",
+              top: currentChunk().pos[i()] + "px",
               height: props.typeHeights[item().type].height + "px",
               width: "100%",
             }}

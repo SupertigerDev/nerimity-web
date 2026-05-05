@@ -1,5 +1,5 @@
 import style from "./ServerMemberList.module.css";
-import { createMemo, createProjection } from "solid-js";
+import { createMemo, createProjection, For, Match, Switch } from "solid-js";
 import { channelStore } from "../../store/channelStore";
 import { serverRolesStore } from "../../store/serverRolesStore";
 import type { ServerMember, ServerRole } from "../../db";
@@ -26,57 +26,71 @@ const offlineRole: ServerRole = {
 };
 
 export const ServerMemberList = () => {
+  const presenceSet = createMemo(
+    () => new Set(Object.keys(userPresenceStore.presences)),
+  );
+
+  const isDefaultPublicMemo = createMemo(() => {
+    const channelPermissions = channelStore.currentPermissions();
+    const defaultRole = serverRolesStore.currentServerDefaultRole();
+    return (
+      hasBit(
+        channelPermissions[defaultRole?.id!],
+        ChannelPermissionFlag.publicChannel.bit,
+      ) || hasBit(defaultRole?.permissions, RolePermissionFlag.admin.bit)
+    );
+  });
+
+  const visibleRoleIds = createMemo(() => {
+    const channelPermissions = channelStore.currentPermissions();
+    const serverRoles = serverRolesStore.currentServerRoles();
+    const set = new Set<string>();
+    for (const roleId of Object.keys(channelPermissions)) {
+      if (
+        hasBit(
+          channelPermissions[roleId],
+          ChannelPermissionFlag.publicChannel.bit,
+        )
+      )
+        set.add(roleId);
+    }
+    for (const roleId of Object.keys(serverRoles)) {
+      if (
+        hasBit(serverRoles[roleId]?.permissions, RolePermissionFlag.admin.bit)
+      )
+        set.add(roleId);
+    }
+    return set;
+  });
+
+  const roleOrderMemo = createMemo(() => {
+    const sorted = serverRolesStore
+      .currentServerSortedRoles()
+      .filter((r) => !r.hideRole);
+    const order: Record<string, number> = {};
+    for (let i = 0; i < sorted.length; i++) order[sorted[i]!.id] = i;
+    return { sorted, order };
+  });
+
   const categorizedMembers = createProjection(
     () => {
       const members = serverStore.currentMembers();
-      const channelPermissions = channelStore.currentPermissions();
-      const serverRoles = serverRolesStore.currentServerRoles();
-      const defaultRole = serverRolesStore.currentServerDefaultRole();
       const server = serverStore.currentServer();
       const creatorId = server?.createdById;
 
-      const sortedRoles = serverRolesStore
-        .currentServerSortedRoles()
-        .filter((r) => !r.hideRole);
+      const { sorted: sortedRoles, order: roleOrder } = roleOrderMemo();
 
-      const roleOrder: Record<string, number> = {};
-      for (let i = 0; i < sortedRoles.length; i++) {
-        roleOrder[sortedRoles[i]!.id] = i;
-      }
+      const vRoleIds = visibleRoleIds();
+      const pSet = presenceSet();
 
-      const hasDefaultChannelPerm = hasBit(
-        channelPermissions[defaultRole?.id!],
-        ChannelPermissionFlag.publicChannel.bit,
-      );
-      const hasDefaultRolePerm = hasBit(
-        defaultRole?.permissions,
-        RolePermissionFlag.admin.bit,
-      );
-      const isDefaultPublic = hasDefaultChannelPerm || hasDefaultRolePerm;
-
-      const presenceSet = new Set(Object.keys(userPresenceStore.presences));
-
-      const visibleRoleIds = new Set<string>();
-      for (const roleId of Object.keys(channelPermissions)) {
-        if (
-          hasBit(
-            channelPermissions[roleId],
-            ChannelPermissionFlag.publicChannel.bit,
-          )
-        ) {
-          visibleRoleIds.add(roleId);
-        }
-      }
-      for (const roleId of Object.keys(serverRoles)) {
-        if (
-          hasBit(serverRoles[roleId]?.permissions, RolePermissionFlag.admin.bit)
-        ) {
-          visibleRoleIds.add(roleId);
-        }
-      }
+      const defaultRole = serverRolesStore.currentServerDefaultRole();
+      const isDefaultPublic = isDefaultPublicMemo();
 
       const buckets: Record<string, ServerMember[]> = {};
       const offlineMembers: ServerMember[] = [];
+
+      for (let i = 0; i < sortedRoles.length; i++)
+        buckets[sortedRoles[i]!.id] = [];
 
       for (let i = 0; i < members.length; i++) {
         const member = members[i]!;
@@ -90,7 +104,7 @@ export const ServerMemberList = () => {
         for (let y = 0; y < roleIds.length; y++) {
           const roleId = roleIds[y]!;
 
-          if (!canViewChannel && visibleRoleIds.has(roleId)) {
+          if (!canViewChannel && vRoleIds.has(roleId)) {
             canViewChannel = true;
           }
 
@@ -105,14 +119,14 @@ export const ServerMemberList = () => {
 
         if (!canViewChannel) continue;
 
-        if (!presenceSet.has(member.userId)) {
+        if (!pSet.has(member.userId)) {
           offlineMembers.push(member);
           continue;
         }
 
         const targetRoleId = topRoleId ?? defaultRole?.id;
         if (targetRoleId) {
-          (buckets[targetRoleId] ??= []).push(member);
+          buckets[targetRoleId]!.push(member);
         }
       }
 
@@ -160,7 +174,7 @@ export const ServerMemberList = () => {
         display: "block",
       }}
     >
-      <VirtualList
+      {/* <VirtualList
         data={categorizedMembers}
         typeHeights={{ m: { height: 40 }, r: { height: 40, sticky: true } }}
       >
@@ -172,7 +186,19 @@ export const ServerMemberList = () => {
               return <ServerMemberListItem member={item.member} />;
           }
         }}
-      </VirtualList>
+      </VirtualList> */}
+      <For each={categorizedMembers}>
+        {(item) => (
+          <Switch>
+            <Match when={item().type === "r"}>
+              <ServerRoleListItem role={item().role} count={item().count} />
+            </Match>
+            <Match when={item().type === "m"}>
+              <ServerMemberListItem member={item().member} />
+            </Match>
+          </Switch>
+        )}
+      </For>
     </div>
   );
 };
