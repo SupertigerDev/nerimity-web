@@ -174,7 +174,7 @@ export const ServerMemberList = () => {
         display: "block",
       }}
     >
-      {/* <VirtualList
+      <VirtualList
         data={categorizedMembers}
         typeHeights={{ m: { height: 40 }, r: { height: 40, sticky: true } }}
       >
@@ -186,8 +186,8 @@ export const ServerMemberList = () => {
               return <ServerMemberListItem member={item.member} />;
           }
         }}
-      </VirtualList> */}
-      <For each={categorizedMembers}>
+      </VirtualList>
+      {/* <For each={categorizedMembers}>
         {(item) => (
           <Switch>
             <Match when={item().type === "r"}>
@@ -198,7 +198,7 @@ export const ServerMemberList = () => {
             </Match>
           </Switch>
         )}
-      </For>
+      </For> */}
     </div>
   );
 };
